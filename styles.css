@@ -4,7 +4,7 @@ body {
 
 /* Map Styling */
 #map {
-  height: calc(100vh - 4rem);
+  height: 100%;
   width: 100%;
   z-index: 1;
 }
@@ -68,6 +68,14 @@ input:disabled {
   background: white;
 }
 
+.leaflet-popup {
+  pointer-events: auto;
+}
+
+.leaflet-popup-close-button {
+  display: block !important;
+}
+
 /* Animation for pulse effect */
 @keyframes pulse {
   0%,
@@ -76,6 +84,13 @@ input:disabled {
   }
   50% {
     opacity: 0.5;
+  }
+}
+
+/* Added animation for progress bar */
+@keyframes progress {
+  0% {
+    width: 0%;
   }
 }
 

@@ -176,6 +176,86 @@
         </div>
     </div>
 
+    <!-- Added Typhoon Simulation Modal -->
+    <div id="typhoon-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-[500px]">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    <i class="fas fa-cloud-showers-heavy text-orange-500"></i>
+                    Simulate Typhoon
+                </h3>
+                <button onclick="closeTyphoonModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <p class="text-sm text-gray-600 mb-6">Choose a typhoon scenario to simulate real-world conditions</p>
+            
+            <form id="typhoon-form" onsubmit="handleTyphoonSimulation(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Scenario Type</label>
+                    <select 
+                        id="typhoon-scenario" 
+                        class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-orange-500 transition-all"
+                    >
+                        <option value="heavy-rain">Heavy Rain - Gradual Water Level Rise</option>
+                        <option value="flash-flood">Flash Flood - Sudden Water Level Spike</option>
+                        <option value="blockage">Blockage - Flow Rate Drops to Zero</option>
+                        <option value="recovery">Recovery - Gradual Normalization</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Duration (seconds)</label>
+                    <input 
+                        type="number" 
+                        id="typhoon-duration" 
+                        min="5"
+                        max="60"
+                        value="20"
+                        class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-orange-500 transition-all"
+                    />
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Intensity</label>
+                    <select 
+                        id="typhoon-intensity" 
+                        class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-orange-500 transition-all"
+                    >
+                        <option value="low">Low - Minimal impact</option>
+                        <option value="medium">Medium - Moderate impact</option>
+                        <option value="high">High - Severe impact</option>
+                    </select>
+                </div>
+                
+                <div class="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                    <p class="text-sm text-orange-800">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        This simulation will affect all nodes and run continuously for the specified duration.
+                    </p>
+                </div>
+                
+                <div class="flex gap-3 pt-2">
+                    <button 
+                        type="submit" 
+                        class="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg transition-all"
+                    >
+                        <i class="fas fa-play mr-2"></i>
+                        Start Simulation
+                    </button>
+                    <button 
+                        type="button"
+                        onclick="closeTyphoonModal()" 
+                        class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 rounded-lg transition-all"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Main Container -->
     <div class="flex h-screen overflow-hidden">
         <!-- Sidebar Navigation -->
@@ -242,11 +322,94 @@
         <!-- Main Content Area -->
         <main class="flex-1 overflow-auto bg-gray-50">
             <!-- Dashboard Tab -->
-            <div id="content-dashboard" class="tab-content">
-                <div class="p-8">
-                    <h2 class="text-3xl font-bold text-gray-800 mb-6">Live Monitoring Dashboard</h2>
-                    <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
-                        <div id="map"></div>
+            <div id="content-dashboard" class="tab-content h-screen flex flex-col">
+                <div class="p-4 flex-shrink-0">
+                    <!-- Made time cards bigger -->
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-3xl font-bold text-gray-800">Live Monitoring Dashboard</h2>
+                        <div class="bg-white px-6 py-3 rounded-xl shadow-md border border-gray-200">
+                            <div class="flex items-center gap-3">
+                                <i class="fas fa-clock text-sky-500 text-lg"></i>
+                                <div>
+                                    <div id="dashboard-time" class="text-xl font-bold text-gray-800"></div>
+                                    <div id="dashboard-date" class="text-xs text-gray-500"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Added typhoon status card to dashboard -->
+                    <div id="dashboard-typhoon-status-card" class="hidden mb-4 bg-gradient-to-r from-orange-50 to-red-50 border-2 border-orange-300 rounded-xl shadow-lg p-5">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-3 mb-3">
+                                    <div class="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-cloud-showers-heavy text-white text-xl animate-pulse"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-lg font-bold text-gray-800">Typhoon Simulation Active</h3>
+                                        <p class="text-sm text-gray-600">Real-time environmental simulation in progress</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="grid grid-cols-3 gap-4 mb-4">
+                                    <div class="bg-white/70 backdrop-blur-sm rounded-lg p-3 border border-orange-200">
+                                        <div class="text-xs text-gray-600 mb-1">Scenario</div>
+                                        <div id="dashboard-typhoon-scenario-name" class="text-sm font-bold text-gray-800">-</div>
+                                    </div>
+                                    <div class="bg-white/70 backdrop-blur-sm rounded-lg p-3 border border-orange-200">
+                                        <div class="text-xs text-gray-600 mb-1">Intensity</div>
+                                        <div id="dashboard-typhoon-intensity-level" class="text-sm font-bold text-gray-800">-</div>
+                                    </div>
+                                    <div class="bg-white/70 backdrop-blur-sm rounded-lg p-3 border border-orange-200">
+                                        <div class="text-xs text-gray-600 mb-1">Duration</div>
+                                        <div id="dashboard-typhoon-duration-time" class="text-sm font-bold text-gray-800">-</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="text-xs text-gray-600 font-medium">Simulation Progress</span>
+                                    </div>
+                                    <div class="w-full h-3 bg-white/70 rounded-full overflow-hidden border border-orange-200">
+                                        <div id="dashboard-typhoon-progress-bar" class="h-full bg-gradient-to-r from-orange-500 to-red-500 transition-all duration-300" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button 
+                                onclick="stopTyphoonSimulation()" 
+                                class="ml-4 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-all flex items-center gap-2 shadow-md"
+                            >
+                                <i class="fas fa-stop"></i>
+                                Stop
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Map container with relative positioning -->
+                <div class="flex-1 relative">
+                    <div id="map"></div>
+                    
+                    <!-- Made legend bigger with larger text and icons -->
+                    <div class="absolute bottom-6 right-6 bg-white/60 backdrop-blur-md rounded-xl shadow-xl p-5 border border-white/40 z-[1000]">
+                        <div class="flex items-center gap-2 mb-3">
+                            <div class="w-8 h-8 bg-sky-500/80 rounded-full flex items-center justify-center">
+                                <i class="fas fa-info text-white text-sm"></i>
+                            </div>
+                            <h3 class="text-base font-bold text-gray-800">Node Status</h3>
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex items-center gap-3">
+                                <div class="w-5 h-5 rounded-full bg-emerald-500 border-4 border-gray-800"></div>
+                                <span class="text-sm font-medium text-gray-700">Normal</span>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <div class="w-5 h-5 rounded-full bg-red-800 border-4 border-gray-800"></div>
+                                <span class="text-sm font-medium text-gray-700">Critical</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -254,18 +417,86 @@
             <!-- Simulation Tab -->
             <div id="content-simulation" class="tab-content hidden">
                 <div class="p-8">
+                    <!-- Made time cards bigger and added typhoon status card -->
                     <div class="flex items-center justify-between mb-6">
                         <div>
                             <h2 class="text-3xl font-bold text-gray-800">Simulation & Testing</h2>
                             <p class="text-gray-600 mt-1">Adjust node parameters to test threshold alerts</p>
                         </div>
-                        <button 
-                            onclick="showAddNodeModal()" 
-                            class="px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white font-medium rounded-lg transition-all flex items-center gap-2"
-                        >
-                            <i class="fas fa-plus"></i>
-                            Add Node
-                        </button>
+                        <div class="flex items-center gap-4">
+                            <div class="bg-white px-8 py-4 rounded-xl shadow-md border border-gray-200">
+                                <div class="flex items-center gap-4">
+                                    <i class="fas fa-clock text-sky-500 text-xl"></i>
+                                    <div>
+                                        <div id="simulation-time" class="text-2xl font-bold text-gray-800"></div>
+                                        <div id="simulation-date" class="text-sm text-gray-500"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <button 
+                                onclick="showTyphoonModal()" 
+                                class="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-lg transition-all flex items-center gap-2"
+                            >
+                                <i class="fas fa-cloud-showers-heavy"></i>
+                                Simulate Typhoon
+                            </button>
+                            <button 
+                                onclick="showAddNodeModal()" 
+                                class="px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white font-medium rounded-lg transition-all flex items-center gap-2"
+                            >
+                                <i class="fas fa-plus"></i>
+                                Add Node
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Added typhoon status card -->
+                    <div id="typhoon-status-card" class="hidden mb-6 bg-gradient-to-r from-orange-50 to-red-50 border-2 border-orange-300 rounded-xl shadow-lg p-6">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-3 mb-3">
+                                    <div class="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-cloud-showers-heavy text-white text-xl animate-pulse"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-lg font-bold text-gray-800">Typhoon Simulation Active</h3>
+                                        <p class="text-sm text-gray-600">Real-time environmental simulation in progress</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="grid grid-cols-3 gap-4 mb-4">
+                                    <div class="bg-white/70 backdrop-blur-sm rounded-lg p-3 border border-orange-200">
+                                        <div class="text-xs text-gray-600 mb-1">Scenario</div>
+                                        <div id="typhoon-scenario-name" class="text-sm font-bold text-gray-800">-</div>
+                                    </div>
+                                    <div class="bg-white/70 backdrop-blur-sm rounded-lg p-3 border border-orange-200">
+                                        <div class="text-xs text-gray-600 mb-1">Intensity</div>
+                                        <div id="typhoon-intensity-level" class="text-sm font-bold text-gray-800">-</div>
+                                    </div>
+                                    <div class="bg-white/70 backdrop-blur-sm rounded-lg p-3 border border-orange-200">
+                                        <div class="text-xs text-gray-600 mb-1">Duration</div>
+                                        <div id="typhoon-duration-time" class="text-sm font-bold text-gray-800">-</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="text-xs text-gray-600 font-medium">Simulation Progress</span>
+                                    </div>
+                                    <div class="w-full h-3 bg-white/70 rounded-full overflow-hidden border border-orange-200">
+                                        <div id="typhoon-progress-bar" class="h-full bg-gradient-to-r from-orange-500 to-red-500 transition-all duration-300" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button 
+                                onclick="stopTyphoonSimulation()" 
+                                class="ml-4 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-all flex items-center gap-2 shadow-md"
+                            >
+                                <i class="fas fa-stop"></i>
+                                Stop
+                            </button>
+                        </div>
                     </div>
                     
                     <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">

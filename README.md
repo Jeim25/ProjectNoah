@@ -5,8 +5,8 @@ A real-time IoT monitoring dashboard for sewer systems with live map visualizati
 ## Features
 
 ### Login
-Username: admin
-Password: admin
+- Username: admin
+- Password: admin
 
 ### Live Dashboard
 - **Interactive Map**: Real-time visualization of all sensor nodes using Leaflet.js

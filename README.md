@@ -7,7 +7,7 @@ A real-time IoT monitoring dashboard for sewer systems with live map visualizati
 ### Live Dashboard
 - **Interactive Map**: Real-time visualization of all sensor nodes using Leaflet.js
 - **Color-Coded Status**: Green markers for normal operation, red for critical alerts
-- **Detailed Tooltips**: Hover over nodes to see water level and flow rate data
+- **Detailed Tooltips**: Hover over nodes to see node name and status. Click to see water level and flow rate data
 - **Auto-Scaling**: Responsive map that adjusts to screen size
 
 ### Simulation & Testing
@@ -17,7 +17,7 @@ A real-time IoT monitoring dashboard for sewer systems with live map visualizati
 - **Table View**: Comprehensive view of all nodes with editable parameters
 
 ### Control Panel
-- **Global Threshold Management**: Set critical water level thresholds system-wide
+- **Global Threshold Management**: Set critical water level and water flow thresholds system-wide
 - **Dynamic Recalibration**: Updates apply immediately to all nodes
 - **Visual Guidance**: Clear information about threshold impacts
 
@@ -55,7 +55,7 @@ Password: admin
 1. View all sensor nodes on the interactive map
 2. Hover over markers to see detailed information
 3. Green markers indicate normal operation
-4. Red markers indicate critical water levels
+4. Red markers indicate critical water levels or water flow
 
 ### Simulation Tab
 1. Click on the "Simulation" tab in the sidebar

@@ -47,6 +47,10 @@ project-noah/
 
 ## Usage Guide
 
+### Login
+Usernamme: admin
+Password: admin
+
 ### Dashboard Tab
 1. View all sensor nodes on the interactive map
 2. Hover over markers to see detailed information
@@ -73,15 +77,5 @@ project-noah/
 3. Notifications are generated when nodes cross the critical threshold
 4. Most recent alerts appear at the top
 
-## Future Enhancements
-
-- Backend integration with real IoT sensors
-- Historical data visualization and analytics
-- User authentication and role-based access
-- Mobile-responsive design improvements
-- Export data to CSV/PDF reports
-- SMS/Email notifications for critical alerts
-- Dark mode support
-- Multi-language support
 
 **Project Noah** - Monitoring the flow, protecting the future.

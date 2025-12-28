@@ -1,4 +1,4 @@
-// Global State Management
+//Global state management
 const state = {
   isAuthenticated: false,
   isGuest: false,
@@ -39,7 +39,7 @@ const state = {
   },
 }
 
-// Import Leaflet
+//Import leaflet
 const L = window.L
 
 function updateClock() {

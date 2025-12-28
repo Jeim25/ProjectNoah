@@ -2,7 +2,7 @@ body {
   font-family: "Inter", sans-serif;
 }
 
-/* Map Styling */
+/* Map styling */
 #map {
   height: 100%;
   width: 100%;
@@ -13,26 +13,26 @@ body {
   background: #f8fafc;
 }
 
-/* Tab Navigation */
+/* Tab navigation */
 .tab-active {
   background: linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, rgba(14, 165, 233, 0.05) 100%);
   border-left: 4px solid #0ea5e9;
   color: #0ea5e9;
 }
 
-/* Glass Effect Utility */
+/* Glass effect */
 .glass-effect {
   background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-/* Smooth Transitions */
+/* Smooth transitions */
 .transition-all {
   transition: all 0.3s ease;
 }
 
-/* Input Focus Styles */
+/* Input focus styles */
 input[type="number"]:focus,
 input[type="text"]:focus,
 input[type="password"]:focus {
@@ -47,7 +47,7 @@ input:disabled {
   opacity: 0.6;
 }
 
-/* Custom Marker Styles (applied via JS) */
+/* Marker styles  */
 .custom-marker {
   background: transparent;
   border: none;
@@ -76,7 +76,7 @@ input:disabled {
   display: block !important;
 }
 
-/* Animation for pulse effect */
+/* pulse effect */
 @keyframes pulse {
   0%,
   100% {
@@ -87,7 +87,7 @@ input:disabled {
   }
 }
 
-/* Added animation for progress bar */
+/* animation for progress bar */
 @keyframes progress {
   0% {
     width: 0%;

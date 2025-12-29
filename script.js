@@ -1,4 +1,4 @@
-//Global state management
+// Global states
 const state = {
   isAuthenticated: false,
   isGuest: false,
@@ -39,7 +39,7 @@ const state = {
   },
 }
 
-//Import leaflet
+// Import leaflet
 const L = window.L
 
 function updateClock() {
@@ -336,6 +336,11 @@ function updateUIForAuthState() {
   const logoutButtonText = document.getElementById("logout-button-text")
   if (logoutButtonText) {
     logoutButtonText.textContent = state.isAuthenticated ? "Log Out" : "Log In"
+  }
+
+  const dashboardAddNodeBtn = document.getElementById("dashboard-add-node-btn")
+  if (dashboardAddNodeBtn) {
+    dashboardAddNodeBtn.style.display = state.isAuthenticated ? "flex" : "none"
   }
 
   renderSimulationTable()
@@ -973,6 +978,22 @@ function updateTyphoonStatusCard() {
     document.getElementById(duration).textContent = `${Math.round(state.typhoonSimulation.totalDuration / 1000)}s`
     document.getElementById(progressBar).style.width = `${progress}%`
   })
+}
+
+function updateLoginState() {
+  const logoutButton = document.getElementById("logout-button-text")
+  const dashboardAddNodeBtn = document.getElementById("dashboard-add-node-btn")
+  const simulationTab = document.getElementById("content-simulation")
+
+  if (state.isAuthenticated) {
+    logoutButton.textContent = "Log Out"
+    if (dashboardAddNodeBtn) dashboardAddNodeBtn.style.display = "flex"
+    if (simulationTab) simulationTab.classList.remove("guest-mode")
+  } else {
+    logoutButton.textContent = "Log In"
+    if (dashboardAddNodeBtn) dashboardAddNodeBtn.style.display = "none"
+    if (simulationTab) simulationTab.classList.add("guest-mode")
+  }
 }
 
 window.addEventListener("DOMContentLoaded", () => {

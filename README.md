@@ -4,10 +4,6 @@ A real-time IoT monitoring dashboard for sewer systems with live map visualizati
 
 ## Features
 
-### Login
-- Username: admin
-- Password: admin
-
 ### Live Dashboard
 - **Interactive Map**: Real-time visualization of all sensor nodes using Leaflet.js
 - **Color-Coded Status**: Green markers for normal operation, red for critical alerts
@@ -52,8 +48,8 @@ project-noah/
 ## Usage Guide
 
 ### Login
-Usernamme: admin
-Password: admin
+- Username: admin
+- Password: admin
 
 ### Dashboard Tab
 1. View all sensor nodes on the interactive map

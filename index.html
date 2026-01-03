@@ -5,22 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Project Noah - IoT Sewer Monitoring</title>
     
-    <!-- Tailwind -->
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Leaflet -->
+    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
-    <!-- Fontawesome -->
+    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     
-    <!-- Google Fonts -->
+    <!-- Google Fonts - Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Styles -->
+    <!-- Custom Styles -->
     <link rel="stylesheet" href="styles.css">
 </head>
 <body class="bg-gray-50">
+    <!-- Added Login Modal -->
     <!-- Login Modal -->
     <div id="login-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white rounded-xl shadow-2xl p-8 w-96">
@@ -78,7 +79,7 @@
         </div>
     </div>
 
-    <!-- modal for adding new nodes -->
+    <!-- Added modal for adding new nodes -->
     <div id="add-node-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white rounded-xl shadow-2xl p-6 w-[800px] max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between mb-4">
@@ -90,7 +91,7 @@
             
             <p class="text-sm text-gray-600 mb-4">Click on the map to select node location</p>
             
-            <!-- map height -->
+            <!-- Increased map height -->
             <div id="add-node-map" class="h-96 rounded-lg border-2 border-gray-200 mb-4"></div>
             
             <form id="add-node-form" onsubmit="handleAddNode(event)" class="space-y-4">
@@ -175,7 +176,7 @@
         </div>
     </div>
 
-    <!-- typhoon simulation Modal -->
+    <!-- Added Typhoon Simulation Modal -->
     <div id="typhoon-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white rounded-xl shadow-2xl p-6 w-[500px]">
             <div class="flex items-center justify-between mb-4">
@@ -255,11 +256,84 @@
         </div>
     </div>
 
-    <!-- main container -->
+    <!-- Added Connection Modal for Dashboard's Add Node feature -->
+    <div id="connection-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-[450px]">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-bold text-gray-800">Node Connection Setup</h3>
+                <button onclick="closeConnectionModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div id="connection-step-1" class="space-y-4">
+                <p class="text-sm text-gray-600">Enter the unique Device ID of the deployed IoT node to begin connection.</p>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Device ID / Serial Number</label>
+                    <input 
+                        type="text" 
+                        id="connection-device-id" 
+                        class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm uppercase font-mono"
+                        placeholder="NOAH-XXXX-XXXX"
+                    />
+                </div>
+                <button 
+                    onclick="startConnectionSimulation()"
+                    class="w-full bg-sky-500 hover:bg-sky-600 text-white font-semibold py-2 rounded-lg transition-all"
+                >
+                    Verify Connection
+                </button>
+            </div>
+
+            <div id="connection-step-2" class="hidden space-y-6 py-4">
+                <div class="flex flex-col items-center justify-center">
+                    <div class="relative w-20 h-20 mb-4">
+                        <div class="absolute inset-0 border-4 border-sky-100 rounded-full"></div>
+                        <div class="absolute inset-0 border-4 border-sky-500 rounded-full border-t-transparent animate-spin"></div>
+                        <i class="fas fa-wifi absolute inset-0 flex items-center justify-center text-sky-500 text-2xl"></i>
+                    </div>
+                    <p id="connection-status-text" class="text-gray-700 font-medium">Connecting to node...</p>
+                    <p class="text-xs text-gray-400 mt-1">Establishing secure handshake</p>
+                </div>
+                <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                    <div id="connection-progress" class="bg-sky-500 h-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div id="connection-step-3" class="hidden space-y-4">
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-3">
+                    <i class="fas fa-check-circle text-green-500 text-xl"></i>
+                    <p class="text-sm text-green-800 font-medium">Connection Successful! Node is online.</p>
+                </div>
+                <div class="space-y-3">
+                    <div class="flex justify-between text-sm border-b pb-2">
+                        <span class="text-gray-500">Signal Strength</span>
+                        <span class="font-bold text-gray-800">Excellent (98%)</span>
+                    </div>
+                    <div class="flex justify-between text-sm border-b pb-2">
+                        <span class="text-gray-500">Battery Level</span>
+                        <span class="font-bold text-gray-800">100% (Solar)</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-500">Firmware</span>
+                        <span class="font-bold text-gray-800">v2.4.1 (Stable)</span>
+                    </div>
+                </div>
+                <button 
+                    onclick="closeConnectionModal()"
+                    class="w-full bg-gray-800 hover:bg-gray-900 text-white font-semibold py-2 rounded-lg transition-all mt-4"
+                >
+                    Done
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
     <div class="flex h-screen overflow-hidden">
-        <!-- sidebar nav -->
+        <!-- Sidebar Navigation -->
         <aside class="w-64 bg-white border-r border-gray-200 shadow-lg flex flex-col">
-            <!-- Logo and title -->
+            <!-- Logo/Title -->
             <div class="p-6 border-b border-gray-200">
                 <h1 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
                     <i class="fas fa-water text-sky-500"></i>
@@ -268,19 +342,20 @@
                 <p class="text-xs text-gray-500 mt-1">IoT Sewer Monitoring</p>
             </div>
             
-            <!-- Navigation links -->
-            <nav class="flex-1 p-4">
-                <ul class="space-y-2">
+            <!-- Navigation Links -->
+            <nav class="flex-1 p-4 flex flex-col">
+                <ul class="space-y-2 flex-1">
                     <li>
                         <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-button tab-active w-full text-left px-4 py-3 rounded-lg transition-all flex items-center gap-3">
                             <i class="fas fa-map-marked-alt w-5"></i>
                             <span class="font-medium">Dashboard</span>
                         </button>
                     </li>
+                    <!-- Added About tab under Dashboard -->
                     <li>
-                        <button onclick="switchTab('simulation')" id="tab-simulation" class="tab-button w-full text-left px-4 py-3 rounded-lg transition-all flex items-center gap-3 text-gray-600 hover:bg-gray-50">
-                            <i class="fas fa-flask w-5"></i>
-                            <span class="font-medium">Simulation</span>
+                        <button onclick="switchTab('about')" id="tab-about" class="tab-button w-full text-left px-4 py-3 rounded-lg transition-all flex items-center gap-3 text-gray-600 hover:bg-gray-50">
+                            <i class="fas fa-info-circle w-5"></i>
+                            <span class="font-medium">About</span>
                         </button>
                     </li>
                     <li>
@@ -296,9 +371,19 @@
                         </button>
                     </li>
                 </ul>
+                
+                <!-- Moved Simulation tab to the bottom most part of the sidebar -->
+                <ul class="mt-auto pt-4 border-t border-gray-100">
+                    <li>
+                        <button onclick="switchTab('simulation')" id="tab-simulation" class="tab-button w-full text-left px-4 py-3 rounded-lg transition-all flex items-center gap-3 text-gray-600 hover:bg-gray-50">
+                            <i class="fas fa-flask w-5"></i>
+                            <span class="font-medium">Simulation</span>
+                        </button>
+                    </li>
+                </ul>
             </nav>
             
-            <!-- footer status -->
+            <!-- Footer Info -->
             <div class="p-4 border-t border-gray-200">
                 <div class="text-xs text-gray-500 text-center mb-3">
                     <p class="font-medium">System Status</p>
@@ -318,9 +403,102 @@
             </div>
         </aside>
         
-        <!-- Main content area -->
+        <!-- Main Content Area -->
         <main class="flex-1 overflow-auto bg-gray-50">
-            <!-- Dashboard tab -->
+            <!-- Added About Tab content -->
+            <!-- About Tab -->
+            <div id="content-about" class="tab-content hidden h-screen overflow-y-auto bg-white p-12">
+                <div class="max-w-3xl mx-auto">
+                    <div class="mb-12">
+                        <h2 class="text-4xl font-bold text-gray-900 mb-4">About Project Noah</h2>
+                        <div class="h-1 w-20 bg-sky-500 rounded"></div>
+                    </div>
+                    
+                    <div class="prose prose-lg text-gray-600 space-y-8">
+                        <section>
+                            <h3 class="text-2xl font-semibold text-gray-800 mb-3">Our Purpose</h3>
+                            <p class="leading-relaxed">
+                                Project Noah is a sophisticated IoT Sewer Monitoring System designed to mitigate the risks of urban flooding and drainage failures. 
+                                By deploying a network of smart sensors across critical infrastructure—starting with the PUP Sta. Mesa campus—we provide 
+                                real-time visibility into the pulse of the city's underground waterways.
+                            </p>
+                        </section>
+
+                        <section class="grid md:grid-cols-2 gap-8 py-8">
+                            <div class="p-6 bg-gray-50 rounded-2xl border border-gray-100 transition-all hover:shadow-md">
+                                <div class="w-12 h-12 bg-sky-100 rounded-xl flex items-center justify-center mb-4">
+                                    <i class="fas fa-satellite-dish text-sky-600 text-xl"></i>
+                                </div>
+                                <h4 class="text-lg font-bold text-gray-800 mb-2">Real-time Monitoring</h4>
+                                <p class="text-sm">Continuous tracking of water levels and flow rates with sub-second precision updates.</p>
+                            </div>
+                            <div class="p-6 bg-gray-50 rounded-2xl border border-gray-100 transition-all hover:shadow-md">
+                                <div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center mb-4">
+                                    <i class="fas fa-bolt text-orange-600 text-xl"></i>
+                                </div>
+                                <h4 class="text-lg font-bold text-gray-800 mb-2">Early Warning</h4>
+                                <p class="text-sm">Automated alerts triggered when thresholds are breached, enabling proactive disaster response.</p>
+                            </div>
+                        </section>
+
+                        <section>
+                            <h3 class="text-2xl font-semibold text-gray-800 mb-3">Capabilities</h3>
+                            <ul class="space-y-4">
+                                <li class="flex items-start gap-4">
+                                    <div class="mt-1.5 w-5 h-5 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <i class="fas fa-check text-emerald-600 text-[10px]"></i>
+                                    </div>
+                                    <span><strong>Dynamic Node Management:</strong> Easily scale the monitoring network by adding or removing nodes via an interactive map interface.</span>
+                                </li>
+                                <li class="flex items-start gap-4">
+                                    <div class="mt-1.5 w-5 h-5 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <i class="fas fa-check text-emerald-600 text-[10px]"></i>
+                                    </div>
+                                    <span><strong>Environmental Simulation:</strong> Test system resilience with advanced typhoon and flood scenarios to prepare for extreme weather.</span>
+                                </li>
+                                <li class="flex items-start gap-4">
+                                    <div class="mt-1.5 w-5 h-5 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <i class="fas fa-check text-emerald-600 text-[10px]"></i>
+                                    </div>
+                                    <span><strong>Intelligent Analytics:</strong> Localized data storage ensures historical patterns and notifications are preserved across sessions.</span>
+                                </li>
+                            </ul>
+                        </section>
+
+                        <section>
+                            <h3 class="text-2xl font-semibold text-gray-800 mb-3">Node Status Definitions</h3>
+                            <div class="grid gap-4 mt-4">
+                                <div class="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+                                    <h4 class="font-bold text-emerald-800 flex items-center gap-2">
+                                        <span class="w-3 h-3 rounded-full bg-emerald-500"></span> Normal
+                                    </h4>
+                                    <p class="text-sm text-emerald-700">Level &lt; Threshold AND Flow &gt; Threshold. Optimal drainage conditions.</p>
+                                </div>
+                                <div class="p-4 bg-orange-50 rounded-xl border border-orange-100">
+                                    <h4 class="font-bold text-orange-800 flex items-center gap-2">
+                                        <span class="w-3 h-3 rounded-full bg-orange-500"></span> Warning
+                                    </h4>
+                                    <p class="text-sm text-orange-700">Level &gt; Threshold AND Flow &gt; Threshold. High capacity usage detected.</p>
+                                </div>
+                                <div class="p-4 bg-rose-50 rounded-xl border border-rose-100">
+                                    <h4 class="font-bold text-rose-800 flex items-center gap-2">
+                                        <span class="w-3 h-3 rounded-full bg-rose-600"></span> Blockage
+                                    </h4>
+                                    <p class="text-sm text-rose-700">Level &gt; Threshold AND Flow &lt; Threshold. Critical failure likely due to debris or obstruction.</p>
+                                </div>
+                            </div>
+                        </section>
+
+                        <footer class="pt-12 border-t border-gray-100">
+                            <p class="text-sm italic">
+                                Built for the resilience of our communities. Monitoring Sta. Mesa, Manila with precision.
+                            </p>
+                        </footer>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard Tab -->
             <div id="content-dashboard" class="tab-content h-screen flex flex-col">
                 <div class="p-4 flex-shrink-0">
                     <!-- Made time cards bigger -->
@@ -328,10 +506,10 @@
                         <!-- Made title font size consistent with other tabs (text-3xl) -->
                         <h2 class="text-3xl font-bold text-gray-800">Live Monitoring Dashboard</h2>
                         <div class="flex items-center gap-4">
-                            <!-- Added Add Node button to dashboard (only visible when logged in) -->
+                            <!-- Changed onclick to openConnectionModal for dashboard button -->
                             <button 
                                 id="dashboard-add-node-btn"
-                                onclick="showAddNodeModal()" 
+                                onclick="openConnectionModal()" 
                                 class="px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white font-medium rounded-lg transition-all flex items-center gap-2 shadow-md"
                                 style="display: none;"
                             >
@@ -350,7 +528,7 @@
                         </div>
                     </div>
                     
-                    <!-- typhoon status card in dashboard -->
+                    <!-- Added typhoon status card to dashboard -->
                     <div id="dashboard-typhoon-status-card" class="hidden mb-4 bg-gradient-to-r from-orange-50 to-red-50 border-2 border-orange-300 rounded-xl shadow-lg p-5">
                         <div class="flex items-start justify-between">
                             <div class="flex-1">
@@ -400,36 +578,49 @@
                     </div>
                 </div>
                 
-                <!-- Map container -->
+                <!-- Map container with relative positioning -->
                 <div class="flex-1 relative">
                     <div id="map"></div>
                     
-                    <!-- legend format -->
-                    <div class="absolute bottom-6 right-6 bg-white/60 backdrop-blur-md rounded-xl shadow-xl p-5 border border-white/40 z-[1000]">
-                        <div class="flex items-center gap-2 mb-3">
-                            <div class="w-8 h-8 bg-sky-500/80 rounded-full flex items-center justify-center">
-                                <i class="fas fa-info text-white text-sm"></i>
+                    <!-- Updated legends card with new status levels -->
+                    <div class="absolute bottom-6 left-6 z-[1000] glass-effect rounded-2xl p-6 shadow-xl border border-white/40 bg-white/60 backdrop-blur-md min-w-[240px]">
+                        <div class="flex items-center gap-3 mb-5 border-b border-gray-200 pb-3">
+                            <div class="w-10 h-10 bg-sky-100 rounded-full flex items-center justify-center">
+                                <i class="fas fa-info-circle text-sky-500 text-xl"></i>
                             </div>
-                            <h3 class="text-base font-bold text-gray-800">Node Status</h3>
+                            <h3 class="font-bold text-gray-800 text-lg">Node Status Guide</h3>
                         </div>
-                        <div class="space-y-2">
-                            <div class="flex items-center gap-3">
-                                <div class="w-5 h-5 rounded-full bg-emerald-500 border-4 border-gray-800"></div>
-                                <span class="text-sm font-medium text-gray-700">Normal</span>
+                        <div class="space-y-4">
+                            <div class="group relative flex items-center gap-4 cursor-help">
+                                <div class="w-6 h-6 rounded-full bg-[#10b981] border-4 border-gray-800"></div>
+                                <span class="text-sm font-semibold text-gray-700">Normal</span>
+                                <div class="absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none w-48 z-10 shadow-xl">
+                                    Water level is below threshold and flow is optimal. System is healthy.
+                                </div>
                             </div>
-                            <div class="flex items-center gap-3">
-                                <div class="w-5 h-5 rounded-full bg-red-800 border-4 border-gray-800"></div>
-                                <span class="text-sm font-medium text-gray-700">Critical</span>
+                            <div class="group relative flex items-center gap-4 cursor-help">
+                                <div class="w-6 h-6 rounded-full bg-[#f97316] border-4 border-gray-800"></div>
+                                <span class="text-sm font-semibold text-gray-700">Warning</span>
+                                <div class="absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none w-48 z-10 shadow-xl">
+                                    High water level detected. Approaching critical capacity.
+                                </div>
+                            </div>
+                            <div class="group relative flex items-center gap-4 cursor-help">
+                                <div class="w-6 h-6 rounded-full bg-[#991b1b] border-4 border-gray-800"></div>
+                                <span class="text-sm font-semibold text-gray-700">Blockage</span>
+                                <div class="absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none w-48 z-10 shadow-xl">
+                                    Critical level with low/zero flow. Immediate inspection required.
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
             
-            <!-- Simulation tab -->
+            <!-- Simulation Tab -->
             <div id="content-simulation" class="tab-content hidden">
                 <div class="p-8">
-                    <!-- time cards format -->
+                    <!-- Made time cards bigger and added typhoon status card -->
                     <div class="flex items-center justify-between mb-6">
                         <div>
                             <h2 class="text-3xl font-bold text-gray-800">Simulation & Testing</h2>
@@ -462,7 +653,7 @@
                         </div>
                     </div>
                     
-                    <!-- typhoon status card -->
+                    <!-- Added typhoon status card -->
                     <div id="typhoon-status-card" class="hidden mb-6 bg-gradient-to-r from-orange-50 to-red-50 border-2 border-orange-300 rounded-xl shadow-lg p-6">
                         <div class="flex items-start justify-between">
                             <div class="flex-1">
@@ -519,7 +710,7 @@
                                     <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">Water Level (m)</th>
                                     <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">Flow Rate (m/s)</th>
                                     <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">Status</th>
-                                    <!-- Action column for remove button -->
+                                    <!-- Added Actions column for remove button -->
                                     <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">Actions</th>
                                 </tr>
                             </thead>
@@ -531,7 +722,7 @@
                 </div>
             </div>
             
-            <!-- Control panel tab -->
+            <!-- Control Panel Tab -->
             <div id="content-control" class="tab-content hidden">
                 <div class="p-8">
                     <h2 class="text-3xl font-bold text-gray-800 mb-2">Control Panel</h2>
@@ -558,7 +749,7 @@
                                         <span class="text-gray-600 font-medium">meters</span>
                                     </div>
 
-                                    <!-- toggle for water level warnings -->
+                                    <!-- Added toggle for water level warnings -->
                                     <div class="flex items-center gap-3 mb-4">
                                         <label class="relative inline-flex items-center cursor-pointer">
                                             <input type="checkbox" id="level-warnings-toggle" class="sr-only peer" onchange="toggleLevelWarnings()" checked>
@@ -577,7 +768,7 @@
                             </div>
                         </div>
 
-                        <!-- Water flow threshold -->
+                        <!-- Added water flow threshold section -->
                         <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-8">
                             <div class="flex items-start gap-4">
                                 <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -598,7 +789,7 @@
                                         <span class="text-gray-600 font-medium">m/s</span>
                                     </div>
 
-                                    <!-- toggle for water flow warnings -->
+                                    <!-- Added toggle for water flow warnings -->
                                     <div class="flex items-center gap-3 mb-4">
                                         <label class="relative inline-flex items-center cursor-pointer">
                                             <input type="checkbox" id="flow-warnings-toggle" class="sr-only peer" onchange="toggleFlowWarnings()" checked>
@@ -616,14 +807,43 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Added blockage notification toggle in the Control Panel -->
+                        <!-- Blockage Notification Toggle -->
+                        <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-8">
+                            <div class="flex items-start gap-4">
+                                <div class="w-12 h-12 bg-rose-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                    <i class="fas fa-bell text-rose-500 text-xl"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <h3 class="text-lg font-semibold text-gray-800 mb-2">Blockage Notifications</h3>
+                                    <p class="text-sm text-gray-600 mb-4">Enable instant on-screen popups when a severe blockage is detected</p>
+                                    
+                                    <div class="flex items-center gap-3 mb-4">
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" id="blockage-popup-toggle" class="sr-only peer" onchange="toggleBlockagePopups()" checked>
+                                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-rose-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rose-500"></div>
+                                        </label>
+                                        <span class="text-sm text-gray-700 font-medium">Enable Blockage Popups</span>
+                                    </div>
+                                    
+                                    <div class="p-4 bg-rose-50 rounded-lg border border-rose-200">
+                                        <p class="text-sm text-rose-800">
+                                            <i class="fas fa-info-circle mr-2"></i>
+                                            Popups will only appear for critical blockages (High water level & Low flow rate).
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
             
-            <!-- Notifications tab -->
+            <!-- Notifications Tab -->
             <div id="content-notifications" class="tab-content hidden">
                 <div class="p-8">
-                    <!-- header with clear all button -->
+                    <!-- Added header with clear all button -->
                     <div class="flex items-center justify-between mb-6">
                         <div>
                             <h2 class="text-3xl font-bold text-gray-800">System Notifications</h2>
@@ -646,10 +866,13 @@
         </main>
     </div>
     
-    <!-- Leaflet -->
+    <!-- Popup Notifications Container -->
+    <div id="popup-notifications" class="fixed top-40 right-6 z-[9999] flex flex-col gap-3 pointer-events-none"></div>
+
+    <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
-    <!-- App JavaScript -->
+    <!-- Application JavaScript -->
     <script src="script.js"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-// Global states
+// Global State Management
 const state = {
   isAuthenticated: false,
   isGuest: false,
@@ -37,9 +37,11 @@ const state = {
     startTime: null,
     totalDuration: null,
   },
+  blockagePopupsEnabled: true,
+  blockedNodeIds: new Set(), // Track nodes currently in blockage state
 }
 
-// Import leaflet
+// Import Leaflet
 const L = window.L
 
 function updateClock() {
@@ -63,14 +65,19 @@ function updateClock() {
 }
 
 function startDataSimulation() {
-  if (state.dataSimulationInterval) {
-    clearInterval(state.dataSimulationInterval)
-  }
+  if (state.dataSimulationInterval) clearInterval(state.dataSimulationInterval)
+
+  // Store initial "previous" state
+  const previousNodeStates = state.nodes.map((n) => ({
+    id: n.id,
+    waterLevel: n.waterLevel,
+    waterFlow: n.waterFlow,
+  }))
 
   state.dataSimulationInterval = setInterval(() => {
-    if (state.isTyphoonActive) return
+    state.nodes.forEach((node, index) => {
+      const prev = previousNodeStates[index] || { ...node }
 
-    state.nodes.forEach((node) => {
       const levelChange = (Math.random() - 0.5) * 0.4
       node.waterLevel = Math.max(0, Math.min(10, node.waterLevel + levelChange))
 
@@ -78,23 +85,32 @@ function startDataSimulation() {
       node.waterFlow = Math.max(0, Math.min(5, node.waterFlow + flowChange))
 
       if (state.levelWarningsEnabled && node.waterLevel > state.globalThreshold) {
-        const wasCritical = node.waterLevel - levelChange <= state.globalThreshold
-        if (wasCritical) {
+        if (prev.waterLevel <= state.globalThreshold) {
           addNotification(`${node.name} reached critical level (${node.waterLevel.toFixed(1)}m)`)
         }
       }
 
       if (state.flowWarningsEnabled && node.waterFlow < state.flowThreshold) {
-        const wasNormal = node.waterFlow - flowChange >= state.flowThreshold
-        if (wasNormal) {
+        if (prev.waterFlow >= state.flowThreshold) {
           addNotification(`${node.name} flow rate dropped below threshold (${node.waterFlow.toFixed(1)}m/s)`)
+        }
+      }
+
+      if (state.blockagePopupsEnabled) {
+        const isBlockage = node.waterLevel > state.globalThreshold && node.waterFlow < state.flowThreshold
+
+        if (isBlockage) {
+          state.blockedNodeIds.add(node.id)
+          updateBlockagePopup()
+        } else if (state.blockedNodeIds.has(node.id)) {
+          state.blockedNodeIds.delete(node.id)
+          updateBlockagePopup()
         }
       }
     })
 
     updateAllMarkers()
     renderSimulationTable()
-    saveStateToLocalStorage()
   }, 3000)
 }
 
@@ -163,6 +179,13 @@ function startTyphoonSimulation(scenario, duration, intensity) {
     waterFlow: node.waterFlow,
   }))
 
+  // Store previous state for blockage detection during typhoon
+  const previousNodeStates = state.nodes.map((n) => ({
+    id: n.id,
+    waterLevel: n.waterLevel,
+    waterFlow: n.waterFlow,
+  }))
+
   state.typhoonSimulationInterval = setInterval(() => {
     const elapsed = Date.now() - state.typhoonSimulation.startTime
     const progress = elapsed / duration
@@ -224,6 +247,24 @@ function startTyphoonSimulation(scenario, duration, intensity) {
 
       node.waterLevel = Math.max(0, Math.min(10, node.waterLevel))
       node.waterFlow = Math.max(0, Math.min(5, node.waterFlow))
+
+      if (state.blockagePopupsEnabled) {
+        const isBlockage = node.waterLevel > state.globalThreshold && node.waterFlow < state.flowThreshold
+        const wasBlockage =
+          previousNodeStates[index].waterLevel > state.globalThreshold &&
+          previousNodeStates[index].waterFlow < state.flowThreshold
+
+        if (isBlockage && !wasBlockage) {
+          showBlockagePopup(node)
+        }
+      }
+
+      // Update previous state
+      previousNodeStates[index] = {
+        id: node.id,
+        waterLevel: node.waterLevel,
+        waterFlow: node.waterFlow,
+      }
     })
 
     updateAllMarkers()
@@ -264,6 +305,8 @@ function saveStateToLocalStorage() {
     typhoonSimulationInterval: state.typhoonSimulationInterval,
     isTyphoonActive: state.isTyphoonActive,
     typhoonSimulation: state.typhoonSimulation,
+    blockagePopupsEnabled: state.blockagePopupsEnabled,
+    blockedNodeIds: Array.from(state.blockedNodeIds), // Convert Set to Array for storage
   }
   localStorage.setItem("projectNoahState", JSON.stringify(stateToSave))
 }
@@ -282,11 +325,14 @@ function loadStateFromLocalStorage() {
     state.typhoonSimulationInterval = parsed.typhoonSimulationInterval || null
     state.isTyphoonActive = parsed.isTyphoonActive || false
     state.typhoonSimulation = parsed.typhoonSimulation || state.typhoonSimulation
+    state.blockagePopupsEnabled = parsed.blockagePopupsEnabled !== undefined ? parsed.blockagePopupsEnabled : true
+    state.blockedNodeIds = new Set(parsed.blockedNodeIds || []) // Convert Array back to Set
 
     document.getElementById("threshold-input").value = state.globalThreshold
     document.getElementById("flow-threshold-input").value = state.flowThreshold
     document.getElementById("level-warnings-toggle").checked = state.levelWarningsEnabled
     document.getElementById("flow-warnings-toggle").checked = state.flowWarningsEnabled
+    document.getElementById("blockage-popup-toggle").checked = state.blockagePopupsEnabled
   }
 }
 
@@ -343,6 +389,9 @@ function updateUIForAuthState() {
     dashboardAddNodeBtn.style.display = state.isAuthenticated ? "flex" : "none"
   }
 
+  const blockageToggle = document.getElementById("blockage-popup-toggle")
+  if (blockageToggle) blockageToggle.checked = state.blockagePopupsEnabled
+
   renderSimulationTable()
   updateAllMarkers()
 }
@@ -369,10 +418,19 @@ function initMap() {
 }
 
 function addMarker(node) {
-  const isLevelCritical = state.levelWarningsEnabled && node.waterLevel > state.globalThreshold
-  const isFlowCritical = state.flowWarningsEnabled && node.waterFlow < state.flowThreshold
-  const isCritical = isLevelCritical || isFlowCritical
-  const color = isCritical ? "#991b1b" : "#10b981"
+  const isLevelHigh = state.levelWarningsEnabled && node.waterLevel > state.globalThreshold
+  const isFlowLow = state.flowWarningsEnabled && node.waterFlow < state.flowThreshold
+
+  let color = "#10b981" // Normal (Green)
+  let statusText = "Normal"
+
+  if (isLevelHigh && isFlowLow) {
+    color = "#991b1b" // Blockage (Red)
+    statusText = "Blockage"
+  } else if (isLevelHigh) {
+    color = "#f97316" // Warning (Orange)
+    statusText = "Warning"
+  }
 
   if (state.markers[node.id]) {
     state.map.removeLayer(state.markers[node.id])
@@ -394,7 +452,6 @@ function addMarker(node) {
 
   const marker = L.marker([node.lat, node.lng], { icon }).addTo(state.map)
 
-  const statusText = isCritical ? "Critical" : "Normal"
   marker.bindTooltip(`<strong>${node.name}</strong><br/>Status: ${statusText}`, {
     direction: "top",
     offset: [0, -15],
@@ -417,58 +474,80 @@ function addMarker(node) {
 }
 
 function createNodePopup(node) {
-  const isLevelCritical = state.levelWarningsEnabled && node.waterLevel > state.globalThreshold
-  const isFlowCritical = state.flowWarningsEnabled && node.waterFlow < state.flowThreshold
-  const isCritical = isLevelCritical || isFlowCritical
-  const statusColor = isCritical ? "text-red-900 bg-red-50" : "text-green-700 bg-green-50"
-  const statusText = isCritical ? "Critical" : "Normal"
+  const isLevelHigh = state.levelWarningsEnabled && node.waterLevel > state.globalThreshold
+  const isFlowLow = state.flowWarningsEnabled && node.waterFlow < state.flowThreshold
+
+  let statusText = "Normal"
+  let statusBg = "bg-green-100"
+  let statusTextColor = "text-green-700"
+  let statusDotColor = "bg-green-500"
+
+  if (isLevelHigh && isFlowLow) {
+    statusText = "Blockage"
+    statusBg = "bg-red-100"
+    statusTextColor = "text-red-700"
+    statusDotColor = "bg-red-500"
+  } else if (isLevelHigh) {
+    statusText = "Warning"
+    statusBg = "bg-orange-100"
+    statusTextColor = "text-orange-700"
+    statusDotColor = "bg-orange-500"
+  }
+
+  const isSimulationTab =
+    document.getElementById("content-simulation") &&
+    !document.getElementById("content-simulation").classList.contains("hidden")
 
   return `
     <div style="font-family: Inter, sans-serif; padding: 8px;">
       <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
         <h3 style="color: #1f2937; font-size: 16px; font-weight: 600; margin: 0;">${node.name}</h3>
-        <span style="padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;" class="${statusColor}">
+        <span style="padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;" class="${statusBg} ${statusTextColor}">
           ${statusText}
         </span>
       </div>
       
       <div style="margin-bottom: 8px;">
         <div style="color: #6b7280; font-size: 12px; margin-bottom: 4px;">Node Name:</div>
-        <input 
-          type="text" 
-          id="popup-name-${node.id}" 
-          value="${node.name}" 
-          style="width: 100%; padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;"
-          ${!state.isAuthenticated ? "disabled" : ""}
-        />
+        <div style="font-size: 13px; font-weight: 500; color: #1f2937;">${node.name}</div>
       </div>
       
       <div style="margin-bottom: 8px;">
         <div style="color: #6b7280; font-size: 12px; margin-bottom: 4px;">Water Level (m):</div>
-        <input 
-          type="number" 
-          step="0.1" 
-          id="popup-level-${node.id}" 
-          value="${node.waterLevel.toFixed(1)}" 
-          style="width: 100%; padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;"
-          ${!state.isAuthenticated ? "disabled" : ""}
-        />
+        ${
+          isSimulationTab && state.isAuthenticated
+            ? `
+          <input 
+            type="number" 
+            step="0.1" 
+            id="popup-level-${node.id}" 
+            value="${node.waterLevel.toFixed(1)}" 
+            style="width: 100%; padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;"
+          />
+        `
+            : `<div style="font-size: 13px; font-weight: 500; color: #1f2937;">${node.waterLevel.toFixed(1)}m</div>`
+        }
       </div>
       
       <div style="margin-bottom: 12px;">
         <div style="color: #6b7280; font-size: 12px; margin-bottom: 4px;">Flow Rate (m/s):</div>
-        <input 
-          type="number" 
-          step="0.1" 
-          id="popup-flow-${node.id}" 
-          value="${node.waterFlow.toFixed(1)}" 
-          style="width: 100%; padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;"
-          ${!state.isAuthenticated ? "disabled" : ""}
-        />
+        ${
+          isSimulationTab && state.isAuthenticated
+            ? `
+          <input 
+            type="number" 
+            step="0.1" 
+            id="popup-flow-${node.id}" 
+            value="${node.waterFlow.toFixed(1)}" 
+            style="width: 100%; padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;"
+          />
+        `
+            : `<div style="font-size: 13px; font-weight: 500; color: #1f2937;">${node.waterFlow.toFixed(1)}m/s</div>`
+        }
       </div>
       
       ${
-        state.isAuthenticated
+        isSimulationTab && state.isAuthenticated
           ? `
         <button 
           onclick="saveNodeFromPopup(${node.id})" 
@@ -477,7 +556,14 @@ function createNodePopup(node) {
           Save Changes
         </button>
       `
-          : `
+          : !isSimulationTab
+            ? `
+        <div style="padding: 8px; background-color: #f0f9ff; border: 1px solid #bae6fd; border-radius: 6px; font-size: 11px; color: #0369a1; text-align: center;">
+          <i class="fas fa-info-circle" style="margin-right: 4px;"></i>
+          Switch to Simulation tab to edit data
+        </div>
+      `
+            : `
         <div style="padding: 8px; background-color: #fef3c7; border: 1px solid #fde047; border-radius: 6px; font-size: 11px; color: #92400e; text-align: center;">
           <i class="fas fa-lock" style="margin-right: 4px;"></i>
           Login to edit node data
@@ -604,12 +690,30 @@ function renderSimulationTable() {
 
   tbody.innerHTML = state.nodes
     .map((node) => {
-      const isLevelCritical = state.levelWarningsEnabled && node.waterLevel > state.globalThreshold
-      const isFlowCritical = state.flowWarningsEnabled && node.waterFlow < state.flowThreshold
-      const isCritical = isLevelCritical || isFlowCritical
-      const statusColor = isCritical ? "text-red-900 bg-red-50" : "text-green-700 bg-green-50"
-      const statusText = isCritical ? "Critical" : "Normal"
-      const disabled = !state.isAuthenticated ? "disabled" : ""
+      const isLevelHigh = state.levelWarningsEnabled && node.waterLevel > state.globalThreshold
+      const isFlowLow = state.flowWarningsEnabled && node.waterFlow < state.flowThreshold
+
+      let statusText = "Normal"
+      let statusBg = "bg-green-100"
+      let statusTextColor = "text-green-700"
+      let statusDotColor = "bg-green-500"
+      let disabled = ""
+
+      if (isLevelHigh && isFlowLow) {
+        statusText = "Blockage"
+        statusBg = "bg-red-100"
+        statusTextColor = "text-red-700"
+        statusDotColor = "bg-red-500"
+      } else if (isLevelHigh) {
+        statusText = "Warning"
+        statusBg = "bg-orange-100"
+        statusTextColor = "text-orange-700"
+        statusDotColor = "bg-orange-500"
+      }
+
+      if (!state.isAuthenticated) {
+        disabled = "disabled"
+      }
 
       return `
             <tr class="hover:bg-gray-50 transition-all">
@@ -635,7 +739,7 @@ function renderSimulationTable() {
                     />
                 </td>
                 <td class="px-6 py-4">
-                    <span class="px-3 py-1 rounded-full text-sm font-medium ${statusColor}">
+                    <span class="px-3 py-1 rounded-full text-sm font-medium ${statusBg} ${statusTextColor}">
                         ${statusText}
                     </span>
                 </td>
@@ -994,6 +1098,126 @@ function updateLoginState() {
     if (dashboardAddNodeBtn) dashboardAddNodeBtn.style.display = "none"
     if (simulationTab) simulationTab.classList.add("guest-mode")
   }
+}
+
+function openConnectionModal() {
+  document.getElementById("connection-modal").classList.remove("hidden")
+  document.getElementById("connection-step-1").classList.remove("hidden")
+  document.getElementById("connection-step-2").classList.add("hidden")
+  document.getElementById("connection-step-3").classList.add("hidden")
+  document.getElementById("connection-device-id").value = ""
+}
+
+function closeConnectionModal() {
+  document.getElementById("connection-modal").classList.add("hidden")
+}
+
+function startConnectionSimulation() {
+  const id = document.getElementById("connection-device-id").value
+  if (!id) {
+    alert("Please enter a Device ID")
+    return
+  }
+
+  document.getElementById("connection-step-1").classList.add("hidden")
+  document.getElementById("connection-step-2").classList.remove("hidden")
+
+  let progress = 0
+  const progressInterval = setInterval(() => {
+    progress += Math.random() * 15
+    if (progress >= 100) {
+      progress = 100
+      clearInterval(progressInterval)
+      setTimeout(() => {
+        document.getElementById("connection-step-2").classList.add("hidden")
+        document.getElementById("connection-step-3").classList.remove("hidden")
+      }, 500)
+    }
+    document.getElementById("connection-progress").style.width = `${progress}%`
+
+    // Update status text
+    if (progress > 30 && progress < 60)
+      document.getElementById("connection-status-text").textContent = "Pinging hardware..."
+    if (progress > 60 && progress < 90)
+      document.getElementById("connection-status-text").textContent = "Syncing sensor data..."
+    if (progress >= 90) document.getElementById("connection-status-text").textContent = "Finishing handshake..."
+  }, 400)
+}
+
+function toggleBlockagePopups() {
+  state.blockagePopupsEnabled = document.getElementById("blockage-popup-toggle").checked
+  const status = state.blockagePopupsEnabled ? "enabled" : "disabled"
+  addNotification(`Blockage popups ${status}`)
+  saveStateToLocalStorage()
+}
+
+function updateBlockagePopup() {
+  const container = document.getElementById("popup-notifications")
+  let popup = document.getElementById("persistent-blockage-popup")
+
+  const blockedNodes = state.nodes.filter((n) => state.blockedNodeIds.has(n.id))
+
+  if (blockedNodes.length === 0) {
+    if (popup) {
+      popup.classList.add("translate-x-[120%]")
+      setTimeout(() => popup.remove(), 500)
+    }
+    return
+  }
+
+  if (!popup) {
+    popup = document.createElement("div")
+    popup.id = "persistent-blockage-popup"
+    popup.className =
+      "pointer-events-auto bg-white border-l-8 border-rose-600 p-5 rounded-xl shadow-2xl transition-all duration-500 translate-x-[120%] flex flex-col gap-4 min-w-[340px]"
+    container.appendChild(popup)
+    setTimeout(() => popup.classList.remove("translate-x-[120%]"), 10)
+  }
+
+  popup.innerHTML = `
+    <div class="flex items-start gap-4">
+        <div class="w-12 h-12 bg-rose-100 rounded-full flex items-center justify-center flex-shrink-0 animate-pulse">
+            <i class="fas fa-exclamation-triangle text-rose-600 text-xl"></i>
+        </div>
+        <div class="flex-1">
+            <h4 class="font-bold text-gray-900 text-lg uppercase tracking-tight">Active Blockages (${blockedNodes.length})</h4>
+            <div class="mt-3 space-y-3 max-h-[300px] overflow-y-auto pr-2">
+                ${blockedNodes
+                  .map(
+                    (node) => `
+                    <div class="p-2 bg-rose-50 rounded-lg border border-rose-100">
+                        <p class="text-gray-800 text-sm font-bold">${node.name}</p>
+                        <div class="flex gap-3 text-[10px] text-rose-600 font-mono mt-1">
+                            <span>LVL: ${node.waterLevel.toFixed(1)}m</span>
+                            <span>FLW: ${node.waterFlow.toFixed(1)}m/s</span>
+                        </div>
+                    </div>
+                `,
+                  )
+                  .join("")}
+            </div>
+        </div>
+        <button onclick="closeBlockagePopup()" class="text-gray-400 hover:text-gray-600 transition-colors p-1">
+            <i class="fas fa-times text-lg"></i>
+        </button>
+    </div>
+    <div class="text-[10px] text-gray-400 italic text-right">Must be manually closed or resolved</div>
+  `
+}
+
+function closeBlockagePopup() {
+  const popup = document.getElementById("persistent-blockage-popup")
+  if (popup) {
+    popup.classList.add("translate-x-[120%]")
+    setTimeout(() => popup.remove(), 500)
+    // Clear the tracking set so it doesn't immediately reappear until next state change
+    state.blockedNodeIds.clear()
+  }
+}
+
+function showBlockagePopup(node) {
+  // Placeholder function to show blockage popup
+  console.log(`Blockage detected at ${node.name}`)
 }
 
 window.addEventListener("DOMContentLoaded", () => {
